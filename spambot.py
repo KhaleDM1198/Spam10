@@ -14,7 +14,7 @@ BOT_TOKEN = '6708590143:AAFzunGdRL1f_vRWH88_yZ844YxQnjgm6R0'
 bot = TeleBot(BOT_TOKEN)
 
 stop_spam = False
-spam_limit = 10  # Define the limit for spamming
+spam_limit = 100  # Define the limit for spamming
 
 
 @bot.message_handler(commands=['start'])
