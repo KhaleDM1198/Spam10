@@ -3,18 +3,20 @@ from keep_alive import keep_alive
 import requests
 import time
 
+
 keep_alive()
 
-BASE_URL = "https://pastebin.com/raw/BdJYWtGw"
 CALL_URL = "https://sms-call.vercel.app/api/call"
 MSG_URL = "https://spamwhats.vercel.app/"
+BASE_URL = "https://pastebin.com/raw/BdJYWtGw"
 
 BOT_TOKEN = '6708590143:AAFzunGdRL1f_vRWH88_yZ844YxQnjgm6R0'
 
 bot = TeleBot(BOT_TOKEN)
 
 stop_spam = False
-spam_limit = 100  # Define the limit for spamming
+
+# Handle the '/start' command
 
 
 @bot.message_handler(commands=['start'])
@@ -24,69 +26,72 @@ def send_welcome(message):
     welcome_message = f"Welcome, {user_name}.\nServer is running"
     bot.send_message(chat_id, welcome_message, parse_mode="HTML")
 
+# Handle the '/spamcall' command
+
 
 @bot.message_handler(commands=['spamcall'])
 def spam_call(message):
     global stop_spam
-    global spam_limit
-    chat_id = message.chat.id
+    msg = bot.reply_to(
+        message, "Spamming calls to phone numbers. Please wait...")
+    bot.pin_chat_message(msg.chat.id, msg.message_id)
     response = requests.get(BASE_URL)
     phone_numbers = response.text.splitlines()
-    spam_count = 0  # Counter for spam messages sent
 
     for phone_number in phone_numbers:
         if stop_spam:
             stop_spam = False
-            return
-        if spam_count >= spam_limit:
-            bot.send_message(chat_id, "Spam limit reached!")
-            stop_spam = True
             return
         payload = {"phone": phone_number}
         try:
             response = requests.post(CALL_URL, json=payload)
-            if response.status_code == 200:
-                success_message = f"Call made to {phone_number} successfully"
-                bot.send_message(chat_id, success_message, parse_mode="HTML")
-                spam_count += 1
+            if response.json()['message'] == 'Sent':
+                print(f"Call made to {phone_number} successfully!")
+                # Fix this line
+                bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text=f"Calls sent successfully to {phone_number}")
+
             else:
-                error_message = f"Failed{phone_number}. Status code: {response.status_code}"
-                bot.send_message(chat_id, error_message, parse_mode="HTML")
+                # Fix this line
+                print(f"Failed to make call to {phone_number}. Status code: {response.status_code}")
+                # Fix this line
+                bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text=f"Failed to make call to {phone_number}. error is: {response.json()['message']}")
+
         except requests.exceptions.RequestException as e:
-            error_message = f"Error occurred while making call to {phone_number}: {e}"
-            bot.send_message(chat_id, error_message, parse_mode="HTML")
-        time.sleep(3)
+            print(f"Error occurred while making call to {phone_number}: {e}")
+            # Fix this line
+            bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id,text=f"Error occurred while making call to {phone_number}: {e}")
+        time.sleep(1)
 
 
+# Handle the '/spammsg' command
 @bot.message_handler(commands=['spammsg'])
 def spam_message(message):
+    # Fix this line
+    msg = bot.reply_to(message, "Spamming WhatsApp messages to phone numbers. Please wait...")
+    bot.pin_chat_message(msg.chat.id, msg.message_id)
     global stop_spam
-    global spam_limit
-    chat_id = message.chat.id
     response = requests.get(BASE_URL)
     phone_numbers = response.text.splitlines()
-    spam_count = 0  # Counter for spam messages sent
-
     for phone_number in phone_numbers:
         if stop_spam:
             stop_spam = False
             return
-        if spam_count >= spam_limit:
-            bot.send_message(chat_id, "Spam limit reached!")
-            stop_spam = True
-            return
         try:
+            # Fix this line
             response2 = requests.get(f'{MSG_URL}send_spam?number={phone_number}')
             if response2.status_code == 200:
-                success_message = f"Message sent to {phone_number} successfully"
-                bot.send_message(chat_id, success_message, parse_mode="HTML")
-                spam_count += 1
-            else:
+                success_message = f"{phone_number} Successfully!"
+                # Fix this line
+                bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text=success_message, parse_mode="HTML")
+            else:  # Fix this line
                 error_message = f"Failed {phone_number}. Status code: {response2.status_code}"
-                bot.send_message(chat_id, error_message, parse_mode="HTML")
+                # Fix this line
+                bot.send_message(chat_id=msg.chat.id, message_id=msg.message_id, text=error_message, parse_mode="HTML")
         except requests.exceptions.RequestException as e:
+            # Fix this line
             error_message = f"Error occurred while sending WhatsApp message to {phone_number}: {e}"
-            bot.send_message(chat_id, error_message, parse_mode="HTML")
+            # Fix this line
+            bot.send_message(chat_id=msg.chat.id, message_id=msg.message_id,text=error_message, parse_mode="HTML")
         time.sleep(5)
 
 
